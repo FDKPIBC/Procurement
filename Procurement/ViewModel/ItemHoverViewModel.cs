@@ -19,6 +19,7 @@ namespace Procurement.ViewModel
         public string Name { get; private set; }
         public bool HasName { get; private set; }
         public List<string> ExplicitMods { get; private set; }
+        public bool IsMirrored { get; private set; }
         public bool HasExplicitMods { get; private set; }
         public List<string> ImplicitMods { get; private set; }
         public bool HasImplicitMods { get; private set; }
@@ -29,14 +30,16 @@ namespace Procurement.ViewModel
         public bool HasMicrotransactions { get; private set; }
         public List<string> EnchantMods { get; private set; }
         public bool HasEnchantMods { get; private set; }
+        public string FlavourText { get; private set; }
 
         public List<string> CraftedMods { get; set; }
+        public List<string> VeiledMods { get; set; }
 
         public bool HasCraftedMods { get; private set; }
+        public bool HasVeiledMods { get; private set; }
         public bool IsProphecy { get; set; }
         public string ProphecyText { get; set; }
         public string ProphecyDifficultyText { get; set; }
-        public List<string> ProphecyFlavour { get; set; }
         public bool IsGear { get; set; }
 
         public string ItemLevel { get; set; }
@@ -52,6 +55,7 @@ namespace Procurement.ViewModel
 
             this.Requirements = new List<Requirement>();
             this.ExplicitMods = item.Explicitmods;
+            this.IsMirrored = item.IsMirrored;
 
             this.ImplicitMods = new List<string>();
 
@@ -65,17 +69,48 @@ namespace Procurement.ViewModel
             this.EnchantMods = item.EnchantMods;
 
             this.CraftedMods = item.CraftedMods;
+            setVeiledMods(item);
 
             SecondaryDescriptionText = item.SecDescrText;
             setTypeSpecificProperties(item);
 
-            this.HasExplicitMods = ExplicitMods != null && ExplicitMods.Count > 0;
-            this.HasImplicitMods = ImplicitMods != null && ImplicitMods.Count > 0; 
-            this.HasCraftedMods = CraftedMods != null && CraftedMods.Count > 0;
+            // If an item has crafted mods but no true explicit mods:
+            //   In game: the crafted mods are correctly separated from the previous section.
+            //   On official web site: there is no seperator added before the previous section.
+            this.HasCraftedMods = CraftedMods?.Count > 0;
+            this.HasVeiledMods = VeiledMods?.Count > 0;
+            this.HasExplicitMods = ExplicitMods?.Count > 0 || HasCraftedMods || IsMirrored;
+            this.HasImplicitMods = ImplicitMods?.Count > 0;
             this.HasEnchantMods = item.EnchantMods.Count > 0;
-            this.HasRequirements = Requirements != null && Requirements.Count > 0;
+            this.HasRequirements = Requirements?.Count > 0;
+
+            if (item.FlavourText?.Count > 0)
+            {
+                this.FlavourText = string.Join("", item.FlavourText);
+            }
 
             setProphecyProperties(item);
+        }
+
+        private void setVeiledMods(Item item)
+        {
+            // The text for veiled mods is in the format "(Prefix|Suffix)##" where ## currently can be 01-06.
+            VeiledMods = new List<string>();
+            foreach (var veiledMod in item.VeiledMods)
+            {
+                if (veiledMod.StartsWith("Prefix"))
+                {
+                    VeiledMods.Add("Veiled Prefix");
+                }
+                else if (veiledMod.StartsWith("Suffix"))
+                {
+                    VeiledMods.Add("Veiled Suffix");
+                }
+                else
+                {
+                    VeiledMods.Add("Veiled Affix");
+                }
+            }
         }
 
         private void setProphecyProperties(Item item)
@@ -87,8 +122,6 @@ namespace Procurement.ViewModel
             this.IsProphecy = true;
             this.ProphecyText = prophecy.ProphecyText;
             this.ProphecyDifficultyText = prophecy.ProphecyDifficultyText;
-            this.ProphecyFlavour = prophecy.FlavourText;
-            this.DescriptionText = string.Empty;
         }
 
         private void setTypeSpecificProperties(Item item)
@@ -110,16 +143,6 @@ namespace Procurement.ViewModel
             this.ItemLevel = string.Format("Item Level : {0}", item.ItemLevel);
             this.Requirements = gear.Requirements;
             this.ImplicitMods = gear.Implicitmods;
-
-            if (gear.FlavourText != null && gear.FlavourText.Count > 0)
-            {
-                var builder = new StringBuilder();
-
-                foreach (var text in ((Gear)(item)).FlavourText)
-                    builder.Append(text);
-
-                DescriptionText = builder.ToString();
-            }
         }
     }
 }

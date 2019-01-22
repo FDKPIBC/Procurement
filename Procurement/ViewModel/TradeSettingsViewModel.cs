@@ -1,25 +1,18 @@
 ﻿using POEApi.Model;
 using Procurement.Utility;
 using System;
-using System.Collections.Generic;
-using System.ComponentModel;
 using System.Windows;
+using System.Windows.Input;
+using Procurement.View.ViewModel;
 
 namespace Procurement.ViewModel
 {
-    public class TradeSettingsViewModel : INotifyPropertyChanged
+    public class TradeSettingsViewModel : ObservableBase
     {
         private const string EMBED_BUYOUTS = "EmbedBuyouts";
         private const string BUYOUT_TAG_ONLY = "BuyoutItemsOnlyVisibleInBuyoutsTag";
         private const string ONLY_DISPLAY_BUYOUTS = "OnlyDisplayBuyouts";
         private const string POE_TRADE_REFRESH = "PoeTradeRefreshEnabled";
-
-        public event PropertyChangedEventHandler PropertyChanged;
-        private void onPropertyChanged(string name)
-        {
-            if (PropertyChanged != null)
-                PropertyChanged(this, new PropertyChangedEventArgs(name));
-        }
 
         public bool LoggedIn { get { return !ApplicationState.Model.Offline; } }
 
@@ -30,8 +23,8 @@ namespace Procurement.ViewModel
             set
             {
                 embedBuyouts = value;
-                if (PropertyChanged != null)
-                    PropertyChanged(this, new PropertyChangedEventArgs(EMBED_BUYOUTS));
+
+                OnPropertyChanged();
 
                 Settings.UserSettings[EMBED_BUYOUTS] = Convert.ToString(value);
                 Settings.Save();
@@ -45,8 +38,8 @@ namespace Procurement.ViewModel
             set
             {
                 buyoutItemsOnlyVisibleInBuyoutsTag = value;
-                if (PropertyChanged != null)
-                    PropertyChanged(this, new PropertyChangedEventArgs(BUYOUT_TAG_ONLY));
+
+                OnPropertyChanged();
 
                 Settings.UserSettings[BUYOUT_TAG_ONLY] = Convert.ToString(value);
                 Settings.Save();
@@ -60,8 +53,8 @@ namespace Procurement.ViewModel
             set
             {
                 onlyDisplayBuyouts = value;
-                if (PropertyChanged != null)
-                    PropertyChanged(this, new PropertyChangedEventArgs(ONLY_DISPLAY_BUYOUTS));
+
+                OnPropertyChanged();
 
                 Settings.UserSettings[ONLY_DISPLAY_BUYOUTS] = Convert.ToString(value);
                 Settings.Save();
@@ -75,8 +68,8 @@ namespace Procurement.ViewModel
             set
             {
                 poeTradeRefreshEnabled = value;
-                if (PropertyChanged != null)
-                    PropertyChanged(this, new PropertyChangedEventArgs(POE_TRADE_REFRESH));
+
+                OnPropertyChanged();
 
                 Settings.UserSettings[POE_TRADE_REFRESH] = Convert.ToString(value);
             }
@@ -91,8 +84,7 @@ namespace Procurement.ViewModel
                 poeTradeRefreshUrl = value;
                 Settings.UserSettings["PoeTradeRefreshUrl"] = value;
 
-                if (PropertyChanged != null)
-                    PropertyChanged(this, new PropertyChangedEventArgs("PoeTradeRefreshUrl"));
+                OnPropertyChanged();
             }
         }
 
@@ -103,8 +95,8 @@ namespace Procurement.ViewModel
             set
             {
                 threadId = value;
-                if (PropertyChanged != null)
-                    PropertyChanged(this, new PropertyChangedEventArgs("ThreadId"));
+
+                OnPropertyChanged();
             }
         }
 
@@ -115,8 +107,8 @@ namespace Procurement.ViewModel
             set
             {
                 threadTitle = value;
-                if (PropertyChanged != null)
-                    PropertyChanged(this, new PropertyChangedEventArgs("ThreadTitle"));
+
+                OnPropertyChanged();
             }
         }
 
@@ -126,9 +118,6 @@ namespace Procurement.ViewModel
             this.buyoutItemsOnlyVisibleInBuyoutsTag = getSetting(BUYOUT_TAG_ONLY);
             this.onlyDisplayBuyouts = getSetting(ONLY_DISPLAY_BUYOUTS);
             this.poeTradeRefreshEnabled = getSetting(POE_TRADE_REFRESH);
-
-            saveCommand = new DelegateCommand(saveShopSettings);
-            saveRefreshCommand = new DelegateCommand(saveRefreshSettings);
 
             if (!Settings.ShopSettings.ContainsKey(ApplicationState.CurrentLeague))
                 return;
@@ -153,8 +142,8 @@ namespace Procurement.ViewModel
             if (!Settings.ShopSettings.ContainsKey(ApplicationState.CurrentLeague))
                 Settings.ShopSettings.Add(ApplicationState.CurrentLeague, new ShopSetting());
 
-            Settings.ShopSettings[ApplicationState.CurrentLeague].ThreadId = this.threadId;
-            Settings.ShopSettings[ApplicationState.CurrentLeague].ThreadTitle = this.threadTitle;
+            Settings.ShopSettings[ApplicationState.CurrentLeague].ThreadId = this.threadId ?? "";
+            Settings.ShopSettings[ApplicationState.CurrentLeague].ThreadTitle = this.threadTitle ?? "";
 
             if (Settings.SaveShopSettings())
                 MessageBox.Show("Shop settings saved", "Settings saved", MessageBoxButton.OK, MessageBoxImage.Information);
@@ -162,19 +151,9 @@ namespace Procurement.ViewModel
                 MessageBox.Show("Unable to save shop settings, error logged to debuginfo.log", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
         }
 
-        private DelegateCommand saveCommand;
-        public DelegateCommand SaveCommand
-        {
-            get { return saveCommand; }
-            set { saveCommand = value; }
-        }
+        public ICommand SaveCommand => new RelayCommand(saveShopSettings);
 
-        private DelegateCommand saveRefreshCommand;
-        public DelegateCommand SaveRefreshCommand
-        {
-            get { return saveRefreshCommand; }
-            set { saveRefreshCommand = value; }
-        }
+        public ICommand SaveRefreshCommand => new RelayCommand(saveRefreshSettings);
 
         private bool getSetting(string key)
         {

@@ -24,6 +24,32 @@ namespace Procurement.ViewModel
             if (stone != null)
                 r = stone.Rarity;
 
+            var vessel = item as DivineVessel;
+            if(vessel != null)
+                r = Rarity.Normal;
+
+            var offering = item as Offering;
+            if (offering != null)
+                r = Rarity.Normal;
+
+            var abyssJewel = item as AbyssJewel;
+            if (abyssJewel != null)
+            {
+                r = abyssJewel.Rarity;
+            }
+
+            var fullBestiaryOrb = item as FullBestiaryOrb;
+            if (fullBestiaryOrb != null)
+            {
+                r = fullBestiaryOrb.Rarity;
+            }
+
+            var questItem = item as QuestItem;
+            if (questItem != null)
+            {
+                return new QuestItemHoverViewModel(item);
+            }
+
             if (r != null)
             {
                 switch (r)
@@ -44,7 +70,8 @@ namespace Procurement.ViewModel
             if (item is Gem)
                 return new GemItemHoverViewModel(item);
 
-            if (item is Currency)
+
+            if (item is Currency || item is Sextant || item is Essence)
                 return new CurrencyItemHoverViewModel(item);
 
             if (item is Prophecy)
@@ -52,6 +79,12 @@ namespace Procurement.ViewModel
 
             return new ItemHoverViewModel(item);
         }
+    }
+
+    public class SextantItemHoverViewModel : ItemHoverViewModel
+    {
+        public SextantItemHoverViewModel(Item item) : base(item)
+        { }
     }
 
     public class RelicGearItemHoverViewModel : ItemHoverViewModel
@@ -107,6 +140,13 @@ namespace Procurement.ViewModel
     public class ProphecyItemHoverViewModel : ItemHoverViewModel
     {
         public ProphecyItemHoverViewModel(Item item) 
+            : base(item)
+        { }
+    }
+
+    public class QuestItemHoverViewModel : ItemHoverViewModel
+    {
+        public QuestItemHoverViewModel(Item item) 
             : base(item)
         { }
     }

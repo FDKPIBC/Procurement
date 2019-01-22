@@ -5,6 +5,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Media;
+using POEApi.Infrastructure;
 using POEApi.Model;
 using Procurement.Controls;
 using Procurement.Utility;
@@ -19,8 +20,11 @@ namespace Procurement.ViewModel
     }
 
 
-    public class ItemDisplayViewModel
+    public class ItemDisplayViewModel : ObservableBase
     {
+        private bool isQuadStash;
+        private bool _isItemInFilter;
+
         public static ItemHover ItemHover = new ItemHover();
 
         public Item Item { get; set; }
@@ -34,7 +38,25 @@ namespace Procurement.ViewModel
                 return gear != null && gear.Sockets.Count > 0;
             }
         }
-        
+
+        public bool IsItemInFilter
+        {
+            get { return _isItemInFilter; }
+            set
+            {
+                _isItemInFilter = value;
+
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(ItemFilterBrush));
+            }
+        }
+
+        public SolidColorBrush ItemFilterBrush
+        {
+            get { return IsItemInFilter ? new SolidColorBrush(Colors.Yellow) 
+                                        : new SolidColorBrush(Colors.Transparent); }
+        }
+
         public ItemDisplayViewModel(Item item)
         {
             this.Item = item;
@@ -42,19 +64,36 @@ namespace Procurement.ViewModel
 
         public Image getImage()
         {
-            var img = new Image
+            if (Item != null)
             {
-                Source = ApplicationState.BitmapCache[Item.IconURL],
-                Stretch = Stretch.None
-            };
+                try
+                {
 
-            CreateItemPopup(img, Item);
+                    var img = new Image
+                    {
+                        Source = ApplicationState.BitmapCache[Item.IconURL],
+                        Stretch = Stretch.None
+                    };
 
-            return img;
+                    CreateItemPopup(img, Item);
+
+                    return img;
+                }
+                catch (Exception e)
+                {
+                    Logger.Log(Item.Name);
+                    Logger.Log(e);
+                    //Don't crash - just give me a blank image.
+                    return null;
+                }
+            }
+
+            return null;
         }
 
-        public UIElement GetSocket()
+        public UIElement GetSocket(bool isQuadStash)
         {
+            this.isQuadStash = isQuadStash;
             var gear = (Gear) Item; 
 
             Grid masterpiece = new Grid();
@@ -67,61 +106,68 @@ namespace Procurement.ViewModel
             int columns = myLittleDesign.Max(t => t.Item1) + 1;
 
             for (int i = 0; i < rows; i++)
-                masterpiece.RowDefinitions.Add(new RowDefinition() { Height = i % 2 == 0 ? GridLength.Auto : new GridLength(0) });
+                masterpiece.RowDefinitions.Add(new RowDefinition() {
+                    Height = i % 2 == 0 ? new GridLength(1, GridUnitType.Star) : new GridLength(0),
+                    MaxHeight = this.isQuadStash ? 23 : 47
+                });
 
             for (int i = 0; i < columns; i++)
-                masterpiece.ColumnDefinitions.Add(new ColumnDefinition() { Width = i % 2 == 0 ? GridLength.Auto : new GridLength(0)  });
+                masterpiece.ColumnDefinitions.Add(new ColumnDefinition() {
+                    Width = i % 2 == 0 ? new GridLength(1, GridUnitType.Star) : new GridLength(0),
+                    MaxWidth = this.isQuadStash ? 23 : 47
+                });
 
-            //masterpiece.ShowGridLines = true;
-
-
-            IEnumerator<Tuple<int, int>> sockets = getEveryOther(myLittleDesign, 0).GetEnumerator();
-            IEnumerator<Tuple<int, int>> links = getEveryOther(myLittleDesign, 1).GetEnumerator();
-            int currentGroup = -1;
-            for (int i = 0; i < gear.Sockets.Count; i++)
-			{
-                Socket socket = gear.Sockets[i];
-			
-                sockets.MoveNext();
-                var currentSocketPosition = sockets.Current;
-
-                if (i > 0)
+            using (var sockets = getEveryOther(myLittleDesign, 0).GetEnumerator())
+            using (var links = getEveryOther(myLittleDesign, 1).GetEnumerator())
+            {
+                int currentGroup = -1;
+                for (int i = 0; i < gear.Sockets.Count; i++)
                 {
-                    links.MoveNext();
-                    var link = links.Current;
+                    Socket socket = gear.Sockets[i];
 
-                    if (currentGroup == socket.Group)
+                    sockets.MoveNext();
+
+                    var currentSocketPosition = sockets.Current;
+
+                    if (i > 0)
                     {
-                        Image img = getLink(currentSocketPosition, link);
-                        img.SetValue(Grid.RowProperty, link.Item2);
-                        img.SetValue(Grid.ColumnProperty, link.Item1);
+                        links.MoveNext();
+                        var link = links.Current;
+
+                        if (currentGroup == socket.Group)
+                        {
+                            Image img = getLink(currentSocketPosition, link);
+                            img.SetValue(Grid.RowProperty, link.Item2);
+                            img.SetValue(Grid.ColumnProperty, link.Item1);
+                            img.IsHitTestVisible = false;
+                            masterpiece.Children.Add(img);
+                        }
+                    }
+
+                    if (!isSocketed(socket, i, gear))
+                    {
+                        Image img = GetSocket(socket, string.Empty);
+                        img.SetValue(Grid.RowProperty, currentSocketPosition.Item2);
+                        img.SetValue(Grid.ColumnProperty, currentSocketPosition.Item1);
                         img.IsHitTestVisible = false;
                         masterpiece.Children.Add(img);
                     }
-                }
+                    else
+                    {
+                        string suffix = "-socketed";
+                        SocketableItem g = gear.SocketedItems.Find(si => si.Socket == i && (socket.Attribute == si.Color || socket.Attribute == "G" || si.Color == "G"));
+                        if (g.Color == "G")
+                            suffix += "-white";
 
-                if (!isSocketed(currentSocketPosition, socket, i, gear))
-                {
-                    Image img = GetSocket(socket, string.Empty);
-                    img.SetValue(Grid.RowProperty, currentSocketPosition.Item2);
-                    img.SetValue(Grid.ColumnProperty, currentSocketPosition.Item1);
-                    img.IsHitTestVisible = false;
-                    masterpiece.Children.Add(img);
-                }
-                else
-                {
-                    string suffix = "-socketed";
-                    Gem g = gear.SocketedItems.Find(si => si.Socket == i && (socket.Attribute == si.Color || socket.Attribute == "G" || si.Color == "G"));
-                    if (g.Color == "G")
-                        suffix += "-white";
-                    Image img = GetSocket(socket, suffix);
-                    img.SetValue(Grid.RowProperty, currentSocketPosition.Item2);
-                    img.SetValue(Grid.ColumnProperty, currentSocketPosition.Item1);
-                    CreateItemPopup(img, getSocketItemAt(currentSocketPosition, socket, i, gear));
-                    masterpiece.Children.Add(img);
-                }
+                        Image img = GetSocket(socket, suffix);
+                        img.SetValue(Grid.RowProperty, currentSocketPosition.Item2);
+                        img.SetValue(Grid.ColumnProperty, currentSocketPosition.Item1);
+                        CreateItemPopup(img, getSocketItemAt(socket, i, gear));
+                        masterpiece.Children.Add(img);
+                    }
 
-                currentGroup = socket.Group;
+                    currentGroup = socket.Group;
+                }
             }
 
             return masterpiece;
@@ -145,27 +191,41 @@ namespace Procurement.ViewModel
             {
                 link = "link-horizontal";
                 img.SetValue(Grid.ColumnSpanProperty, 3);
-                img.Margin = new Thickness(-19, 0, 0, 0);
+                if (this.isQuadStash)
+                {
+                    img.Margin = new Thickness(-11.5, 0, 11.5, 0);
+                }
+                else
+                {
+                    img.Margin = new Thickness(-23, 0, 23, 0);
+                }
                 img.HorizontalAlignment = HorizontalAlignment.Left;
             }
             else
             {
                 link = "link-vertical";
                 img.SetValue(Grid.RowSpanProperty, 3);
-                img.Margin = new Thickness(0, -20, 0, 0);
+                if (this.isQuadStash)
+                {
+                    img.Margin = new Thickness(0, -11.5, 0, 11.5);
+                }
+                else
+                {
+                    img.Margin = new Thickness(0, -23, 0, 23);
+                }
                 img.VerticalAlignment = VerticalAlignment.Top;
             }
 
             var url = string.Format(linkFormat, link);
 
             img.SetValue(Panel.ZIndexProperty, 1);
-            img.Stretch = Stretch.None;
+            img.Stretch = Stretch.Fill;
             img.Source = ApplicationState.BitmapCache.GetByLocalUrl(url);
 
             return img;
         }
 
-        private bool isSocketed(Tuple<int, int> nextAvail, Socket socket, int socketIndex, Gear item)
+        private bool isSocketed(Socket socket, int socketIndex, Gear item)
         {
             if (item.SocketedItems == null || item.SocketedItems.Count == 0)
                 return false;
@@ -173,7 +233,7 @@ namespace Procurement.ViewModel
             return item.SocketedItems.Exists(i => i.Socket == socketIndex && (socket.Attribute == i.Color || socket.Attribute == "G" || i.Color == "G"));
         }
 
-        private Gem getSocketItemAt(Tuple<int, int> nextAvail, Socket socket, int socketIndex, Gear item)
+        private SocketableItem getSocketItemAt(Socket socket, int socketIndex, Gear item)
         {
             return item.SocketedItems.First(i => i.Socket == socketIndex && (socket.Attribute == i.Color || socket.Attribute == "G" || i.Color == "G"));
         }
@@ -193,6 +253,9 @@ namespace Procurement.ViewModel
                 case "S":
                     color = "red" + suffix;
                     break;
+                case "false":
+                    color = "abyssal" + suffix;
+                    break;
                 default:
                     color = "white" + suffix;
                     break;
@@ -202,7 +265,7 @@ namespace Procurement.ViewModel
 
             var img = new AlphaHittestedImage
             {
-                Stretch = Stretch.None,
+                Stretch = Stretch.Fill,
                 Source = ApplicationState.BitmapCache.GetByLocalUrl(url)
             };
 
@@ -253,6 +316,9 @@ namespace Procurement.ViewModel
             if (H == 4)
                 maxHeight = 6;
 
+            if (H == 4 && W == 1)
+                maxHeight = 7;
+
             List<Tuple<int, int>> possible = new List<Tuple<int, int>>();
 
             possible.Add(new Tuple<int, int>(0, 0)); //Top Left
@@ -260,8 +326,11 @@ namespace Procurement.ViewModel
             possible.Add(new Tuple<int, int>(2, 0)); //Top Right
             possible.Add(new Tuple<int, int>(2, 1)); //Link
             if (W == 1)
-                possible.Add(new Tuple<int, int>(0, 1)); //Not valid for everything but single column rapiers / wands meh.
- 
+            {
+                //Not valid for everything but single column rapiers / wands meh.
+                possible.Add(new Tuple<int, int>(0, 1)); 
+            }
+
             possible.Add(new Tuple<int, int>(2, 2)); //Middle Right
             possible.Add(new Tuple<int, int>(1, 2)); //Link
             possible.Add(new Tuple<int, int>(0, 2)); //Middle Left
@@ -269,10 +338,18 @@ namespace Procurement.ViewModel
             possible.Add(new Tuple<int, int>(0, 4)); //Bottom Left
             possible.Add(new Tuple<int, int>(1, 4)); //Link
             possible.Add(new Tuple<int, int>(2, 4)); //Bottom Right
+            
+            if (W == 1 && H == 4)
+            {
+                //Extra one for reefbane which is 4 stacked vertically
+                possible.Add(new Tuple<int, int>(0, 5)); //New Bottom Link
+                possible.Add(new Tuple<int, int>(0, 6)); //New Bottom Left
+            }
 
-            foreach (var turple in possible)
-                if (turple.Item1 < maxWidth && turple.Item2 < maxHeight)
-                    yield return turple;
+            foreach (var tuple in possible)
+                if (tuple.Item1 < maxWidth && tuple.Item2 < maxHeight)
+                    yield return tuple;
         }
+
     }
 }

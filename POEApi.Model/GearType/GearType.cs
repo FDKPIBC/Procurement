@@ -21,11 +21,13 @@
         Sword,
         Shield,
         Wand,
+        FishingRod,
         Flask,
         Map,
         QuestItem,
         DivinationCard,
         Jewel,
+        AbyssJewel,
         Talisman,
         Breachstone,
         Leaguestone

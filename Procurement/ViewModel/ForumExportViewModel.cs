@@ -13,10 +13,12 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Input;
+using Procurement.View.ViewModel;
 
 namespace Procurement.ViewModel
 {
-    public class ForumExportViewModel : INotifyPropertyChanged
+    public class ForumExportViewModel : ObservableBase
     {
         private ExportPreferenceManager preferenceManager;
         private List<TabInfo> stashItems;
@@ -24,26 +26,11 @@ namespace Procurement.ViewModel
         private string text;
         private static List<IVisitor> visitors = null;
 
-        private DelegateCommand copyCommand;
-        public DelegateCommand CopyCommand
-        {
-            get { return copyCommand; }
-            set { copyCommand = value; }
-        }
+        public ICommand CopyCommand => new RelayCommand(copy);
 
-        private DelegateCommand postToThreadCommand;
-        public DelegateCommand PostToThreadCommand
-        {
-            get { return postToThreadCommand; }
-            set { postToThreadCommand = value; }
-        }
+        public ICommand PostToThreadCommand=> new RelayCommand(postToThread);
 
-        private DelegateCommand bumpThreadCommand;
-        public DelegateCommand BumpThreadCommand
-        {
-            get { return bumpThreadCommand; }
-            set { bumpThreadCommand = value; }
-        }
+        public ICommand BumpThreadCommand => new RelayCommand(bumpThread);
 
         public List<string> AvailableTemplates { get; private set; }
 
@@ -54,7 +41,7 @@ namespace Procurement.ViewModel
             set
             {
                 currentTemplate = value;
-                onPropertyChanged("CurrentTemplate");
+                OnPropertyChanged();
                 Text = getFinal(selected.SelectMany(sid => ApplicationState.Stash[ApplicationState.CurrentLeague].GetItemsByTab(sid))
                                                               .OrderBy(id => id.Y).ThenBy(i => i.X));
             }
@@ -66,7 +53,7 @@ namespace Procurement.ViewModel
             set
             {
                 stashItems = value;
-                onPropertyChanged("StashItems");
+                OnPropertyChanged();
             }
         }
 
@@ -78,17 +65,13 @@ namespace Procurement.ViewModel
             set
             {
                 text = value;
-                onPropertyChanged("Text");
+                OnPropertyChanged();
             }
         }
 
 
         public ForumExportViewModel()
         {
-            copyCommand = new DelegateCommand(copy);
-            postToThreadCommand = new DelegateCommand(postToThread);
-            bumpThreadCommand = new DelegateCommand(bumpThread);
-
             preferenceManager = new ExportPreferenceManager();
 
             updateForLeague();
@@ -145,16 +128,23 @@ namespace Procurement.ViewModel
                 {
                     try
                     {
-                        var threadBumped = ApplicationState.Model.BumpThread(Settings.ShopSettings[ApplicationState.CurrentLeague].ThreadId, Settings.ShopSettings[ApplicationState.CurrentLeague].ThreadTitle);
+                        var threadBumped = ApplicationState.Model.BumpThread(
+                            Settings.ShopSettings[ApplicationState.CurrentLeague].ThreadId,
+                            Settings.ShopSettings[ApplicationState.CurrentLeague].ThreadTitle);
 
                         if (threadBumped)
-                            MessageBox.Show("Shop thread successfully bumped!", "Thread bumped", MessageBoxButton.OK, MessageBoxImage.Information);
+                            MessageBox.Show("Shop thread successfully bumped!", "Thread bumped", MessageBoxButton.OK,
+                                MessageBoxImage.Information);
                         else
-                            MessageBox.Show("Error bumping shop thread, details logged to debuginfo.log", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                            MessageBox.Show("Error bumping shop thread, details logged to debuginfo.log", "Error",
+                                MessageBoxButton.OK, MessageBoxImage.Error);
                     }
                     catch (ForumThreadException)
                     {
-                        MessageBox.Show("The thread title supplied in your settings does not match the title of the thread Procurement tried to bump with the threadId in your settings. Check that your settings are correct", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                        MessageBox.Show("There was an error while attempting to bump the thread.  It is possible " +
+                            "the thread title supplied in your settings does not match the title of the thread " +
+                            "Procurement tried to bump with the threadId in your settings. Check that your settings " +
+                            "are correct", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                     }
                 });
         }
@@ -186,7 +176,9 @@ namespace Procurement.ViewModel
 
         private bool settingsValid(bool isUpdate)
         {
-            if (!Settings.ShopSettings.ContainsKey(ApplicationState.CurrentLeague) || string.IsNullOrEmpty(Settings.ShopSettings[ApplicationState.CurrentLeague].ThreadId) || string.IsNullOrEmpty(Settings.ShopSettings[ApplicationState.CurrentLeague].ThreadTitle))
+            if (!Settings.ShopSettings.ContainsKey(ApplicationState.CurrentLeague) ||
+                string.IsNullOrEmpty(Settings.ShopSettings[ApplicationState.CurrentLeague].ThreadId) ||
+                string.IsNullOrEmpty(Settings.ShopSettings[ApplicationState.CurrentLeague].ThreadTitle))
             {
                 MessageBox.Show("No shop settings found for current league, please configure your ThreadId and ThreadTitle under the TradeSettings tab", "Settings not found!", MessageBoxButton.OK, MessageBoxImage.Error);
                 return false;
@@ -352,14 +344,6 @@ namespace Procurement.ViewModel
                                                     .Where(t => !(t.IsAbstract || t.IsInterface) && visitorType.IsAssignableFrom(t))
                                                     .Select(t => Activator.CreateInstance(t) as IVisitor)
                                                     .ToList();
-        }
-
-        public event PropertyChangedEventHandler PropertyChanged;
-
-        private void onPropertyChanged(string name)
-        {
-            if (PropertyChanged != null)
-                PropertyChanged(this, new PropertyChangedEventArgs(name));
         }
 
         internal void ToggleAll(bool value)

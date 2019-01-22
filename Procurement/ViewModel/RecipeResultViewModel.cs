@@ -1,18 +1,13 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using Procurement.ViewModel.Recipes;
 using System.ComponentModel;
 using POEApi.Model;
-using System.Windows.Controls;
 
 namespace Procurement.ViewModel
 {
-    public class RecipeResultViewModel : INotifyPropertyChanged
+    public class RecipeResultViewModel : ObservableBase
     {
-        public event PropertyChangedEventHandler PropertyChanged;
-
         private Dictionary<string, List<RecipeResult>> results;
         private RecipeManager manager;
 
@@ -22,8 +17,8 @@ namespace Procurement.ViewModel
             set 
             { 
                 results = value;
-                if (PropertyChanged != null)
-                    PropertyChanged(this, new PropertyChangedEventArgs("Results"));
+
+                OnPropertyChanged();
             }
         }
 
@@ -35,8 +30,8 @@ namespace Procurement.ViewModel
             set 
             { 
                 selectedItem = value;
-                if (PropertyChanged != null)
-                    PropertyChanged(this, new PropertyChangedEventArgs("SelectedItem"));
+
+                OnPropertyChanged();
             }
         }
         
@@ -52,18 +47,25 @@ namespace Procurement.ViewModel
         {
             SelectedItem = item;
         }
-        private void updateResults()
+
+        Dictionary<Tab, List<Item>> GetUsableCurrentLeagueItemsByTab()
         {
-            List<Item> items = new List<Item>();
+            Dictionary<Tab, List<Item>> itemsByTab = new Dictionary<Tab, List<Item>>();
             Stash stash = ApplicationState.Stash[ApplicationState.CurrentLeague];
 
             var usableTabs = stash.Tabs.Where(t => !Settings.Lists["IgnoreTabsInRecipes"].Contains(t.Name)).ToList();
             foreach (var tab in usableTabs)
             {
-                items.AddRange(stash.GetItemsByTab(tab.i));
+                itemsByTab.Add(tab, stash.GetItemsByTab(tab.i));
             }
 
-            Results = manager.Run(items);
+            return itemsByTab;
+        }
+
+        private void updateResults()
+        {
+            Dictionary<Tab, List<Item>> itemsByTab = GetUsableCurrentLeagueItemsByTab();
+            Results = manager.Run(itemsByTab);
             if (Results.Count > 0)
                 SelectedItem = Results.Values.First().First().MatchedItems[0];
         }

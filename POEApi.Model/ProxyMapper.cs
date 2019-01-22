@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
+using Newtonsoft.Json.Linq;
 using POEApi.Infrastructure;
 
 namespace POEApi.Model
@@ -12,30 +13,37 @@ namespace POEApi.Model
         internal const string CHARGES = "Currently has %0 of %1 Charges";
         internal const string STASH = "Stash";
         public const string QUALITY = "Quality";
+        public const string NETTIER = "Net Tier";
+        public const string GENUS = "Genus";
+        public const string GROUP = "Group";
+        public const string FAMILY = "Family";
         private static readonly Regex qualityRx = new Regex("[+]{1}(?<quality>[0-9]{1,2}).*");
 
         #region   Orb Types  
 
-        private static readonly Dictionary<string, OrbType> orbMap = new Dictionary<string, OrbType>
+        private static readonly Dictionary<string, OrbType> orbMap = new Dictionary<string, OrbType>(
+            StringComparer.CurrentCultureIgnoreCase)
         {
-            {"Chaos", OrbType.Chaos},
-            {"Divine", OrbType.Divine},
-            {"Regal", OrbType.Regal},
-            {"Augmentation", OrbType.Augmentation},
+            {"Chaos Orb", OrbType.Chaos},
+            {"Divine Orb", OrbType.Divine},
+            {"Regal Orb", OrbType.Regal},
+            {"Orb of Augmentation", OrbType.Augmentation},
             {"Orb of Alchemy", OrbType.Alchemy},
             {"Alchemy Shard", OrbType.AlchemyShard},
-            {"Chromatic", OrbType.Chromatic},
-            {"Transmutation", OrbType.Transmutation},
-            {"Scouring", OrbType.Scouring},
-            {"Glassblower", OrbType.GlassblowersBauble},
-            {"Cartographer", OrbType.Chisel},
+            {"Chromatic Orb", OrbType.Chromatic},
+            {"Orb of Transmutation", OrbType.Transmutation},
+            {"Transmutation Shard", OrbType.TransmutationShard},
+            {"Orb of Scouring", OrbType.Scouring},
+            {"Glassblower's Bauble", OrbType.GlassblowersBauble},
+            {"Cartographer's Chisel", OrbType.Chisel},
             {"Gemcutter's Prism", OrbType.GemCutterPrism},
-            {"Alteration", OrbType.Alteration},
-            {"Chance", OrbType.Chance},
-            {"Regret", OrbType.Regret},
-            {"Exalted", OrbType.Exalted},
+            {"Orb of Alteration", OrbType.Alteration},
+            {"Alteration Shard", OrbType.AlterationShard},
+            {"Orb of Chance", OrbType.Chance},
+            {"Orb of Regret", OrbType.Regret},
+            {"Exalted Orb", OrbType.Exalted},
             {"Armourer's Scrap", OrbType.ArmourersScrap},
-            {"Blessed", OrbType.Blessed},
+            {"Blessed Orb", OrbType.Blessed},
             {"Blacksmith's Whetstone", OrbType.BlacksmithsWhetstone},
             {"Scroll Fragment", OrbType.ScrollFragment},
             {"Jeweller's Orb", OrbType.JewelersOrb},
@@ -48,7 +56,37 @@ namespace POEApi.Model
             {"Imprint", OrbType.Imprint},
             {"Vaal Orb", OrbType.VaalOrb},
             {"Perandus Coin", OrbType.PerandusCoin},
-            {"Silver Coin", OrbType.SilverCoin}
+            {"Silver Coin", OrbType.SilverCoin},
+            {"Ancient Orb", OrbType.AncientOrb},
+            {"Ancient Shard", OrbType.AncientShard},
+            {"Annulment Shard", OrbType.AnnulmentShard},
+            {"Binding Shard", OrbType.BindingShard},
+            {"Chaos Shard", OrbType.ChaosShard},
+            {"Engineer's Orb", OrbType.EngineersOrb},
+            {"Engineer's Shard", OrbType.EngineersShard},
+            {"Exalted Shard", OrbType.ExaltedShard},
+            {"Harbinger's Orb", OrbType.HarbingersOrb},
+            {"Harbinger's Shard", OrbType.HarbingersShard},
+            {"Horizon Shard", OrbType.HorizonShard},
+            {"Mirror Shard", OrbType.MirrorShard},
+            {"Orb of Annulment", OrbType.AnnulmentOrb},
+            {"Orb of Binding", OrbType.BindingOrb},
+            {"Orb of Horizons", OrbType.HorizonOrb},
+            {"Regal Shard", OrbType.RegalShard},
+            {"Bestiary Orb", OrbType.BestiaryOrb},
+            {"Simple Rope Net", OrbType.SimpleRopeNet},
+            {"Reinforced Rope Net", OrbType.ReinforcedRopeNet},
+            {"Strong Rope Net", OrbType.StrongRopeNet},
+            {"Simple Iron Net", OrbType.SimpleIronNet},
+            {"Reinforced Iron Net", OrbType.ReinforcedIronNet},
+            {"Strong Iron Net", OrbType.StrongIronNet},
+            {"Simple Steel Net", OrbType.SimpleSteelNet},
+            {"Reinforced Steel Net", OrbType.ReinforcedSteelNet},
+            {"Strong Steel Net", OrbType.StrongSteelNet},
+            {"Thaumaturgical Net", OrbType.ThaumaturgicalNet},
+            {"Necromancy Net", OrbType.NecromancyNet},
+            {"Pantheon Soul", OrbType.PantheonSoul},
+            {"Incursion Vial", OrbType.IncursionVial},
         };
 
         #endregion
@@ -178,29 +216,33 @@ namespace POEApi.Model
             {"CurrencyStash", TabType.Currency},
             {"DivinationCardStash", TabType.DivinationCard},
             {"EssenceStash", TabType.Essence},
-            {"QuadStash", TabType.Quad}
+            {"QuadStash", TabType.Quad},
+            {"MapStash", TabType.Map },
+            {"FragmentStash", TabType.Fragment },
         };
 
         public static TabType GetTabType(string type)
         {
-            try
+            if (string.IsNullOrWhiteSpace(type) || !tabTypeMap.ContainsKey(type))
             {
-                return tabTypeMap.First(m => type.Contains(m.Key)).Value;
-            }
-            catch (Exception)
-            {
+                Logger.Log(string.Format("Found unknown stash tab type '{0}'.", type));
                 return TabType.Unknown;
             }
+
+            return tabTypeMap[type];
         }
 
         private static string getPropertyByName(List<JSONProxy.Property> properties, string name)
         {
+            if (properties == null)
+                return null;
+
             var prop = properties.Find(p => p.Name == name);
 
             if (prop == null)
                 return string.Empty;
 
-            return (prop.Values[0] as object[])[0].ToString();
+            return (prop.Values[0] as JArray)[0].ToString();
         }
 
         internal static OrbType GetOrbType(JSONProxy.Item item)
@@ -210,17 +252,29 @@ namespace POEApi.Model
 
         internal static OrbType GetOrbType(string name)
         {
-            try
+            if (string.IsNullOrWhiteSpace(name))
             {
-                return orbMap.First(m => name.Contains(m.Key)).Value;
-            }
-            catch (Exception ex)
-            {
-                Logger.Log(ex);
-                Logger.Log("ProxyMapper.GetOrbType Failed! ItemType = " + name);
-
+                Logger.Log("ProxyMapper.GetOrbType: Failed to get OrbType: name is null or white space.");
                 return OrbType.Unknown;
             }
+
+            // Collapse all of the "Captured Soul of ..." into a single PantheonSoul OrbType.
+            if (name.StartsWith("Captured Soul of ", StringComparison.CurrentCultureIgnoreCase))
+            {
+                name = "Pantheon Soul";
+            }
+            else if (name.StartsWith("Vial of ", StringComparison.CurrentCultureIgnoreCase))
+            {
+                name = "Incursion Vial";
+            }
+
+            if (orbMap.ContainsKey(name))
+            {
+                return orbMap[name];
+            }
+
+            Logger.Log("ProxyMapper.GetOrbType: Failed to get OrbType for name '" + name + "'.");
+            return OrbType.Unknown;
         }
 
         internal static EssenceType GetEssenceType(JSONProxy.Item item)
@@ -273,11 +327,11 @@ namespace POEApi.Model
 
         internal static StackInfo GetStackInfo(List<JSONProxy.Property> list)
         {
-            var stackSize = list.Find(p => p.Name == STACKSIZE);
-            if (stackSize == null)
+            string propertyValue = getPropertyByName(list, STACKSIZE);
+            if (string.IsNullOrWhiteSpace(propertyValue))
                 return new StackInfo(1, 1);
 
-            var stackInfo = getPropertyByName(list, STACKSIZE).Split('/');
+            var stackInfo = propertyValue.Split('/');
 
             return new StackInfo(Convert.ToInt32(stackInfo[0]), Convert.ToInt32(stackInfo[1]));
         }
@@ -308,11 +362,11 @@ namespace POEApi.Model
                 if (chargeSize == null)
                     return new ChargeInfo(0, 0);
 
-                var qty = (object[]) chargeSize.Values[0];
-            
-                var max = (object[]) chargeSize.Values[1];
+                var qty = chargeSize.Values[0] as JArray;
 
-                return new ChargeInfo(int.Parse(qty[0].ToString()), int.Parse(max[1].ToString()));
+                var max = chargeSize.Values[1] as JArray;
+
+                return new ChargeInfo(int.Parse(qty.First.ToString()), int.Parse(max.First.ToString()));
             }
             catch (Exception ex)
             {
@@ -320,6 +374,30 @@ namespace POEApi.Model
             }
 
             return new ChargeInfo(1,1);
+        }
+
+        public static int GetNetTier(List<JSONProxy.Property> properties)
+        {
+            string maybeNetTier = getPropertyByName(properties, NETTIER);
+            if (string.IsNullOrWhiteSpace(maybeNetTier))
+                return 0;
+
+            return Convert.ToInt32(maybeNetTier);
+        }
+
+        public static string GetGenus(List<JSONProxy.Property> properties)
+        {
+            return getPropertyByName(properties, GENUS);
+        }
+
+        public static string GetGroup(List<JSONProxy.Property> properties)
+        {
+            return getPropertyByName(properties, GROUP);
+        }
+
+        public static string GetFamily(List<JSONProxy.Property> properties)
+        {
+            return getPropertyByName(properties, FAMILY);
         }
     }
 }

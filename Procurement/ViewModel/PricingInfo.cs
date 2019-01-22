@@ -1,19 +1,12 @@
 ﻿using POEApi.Infrastructure;
-using System.ComponentModel;
 using System.Globalization;
 using System.Windows.Input;
+using Procurement.View.ViewModel;
 
 namespace Procurement.ViewModel
 {
-    public class PricingInfo : INotifyPropertyChanged
+    public class PricingInfo : ObservableBase
     {
-        public event PropertyChangedEventHandler PropertyChanged;
-        private void onPropertyChanged(string name)
-        {
-            if (PropertyChanged != null)
-                PropertyChanged(this, new PropertyChangedEventArgs(name));
-        }
-
         private string value;
         public string Value
         {
@@ -21,7 +14,7 @@ namespace Procurement.ViewModel
             set
             {
                 this.value = value;
-                onPropertyChanged("Value");
+                OnPropertyChanged();
             }
         }
         private string orb;
@@ -31,7 +24,7 @@ namespace Procurement.ViewModel
             set
             {
                 this.orb = value;
-                onPropertyChanged("Orb");
+                OnPropertyChanged();
             }
         }
         private bool enabled;
@@ -42,7 +35,7 @@ namespace Procurement.ViewModel
             {
                 enabled = value;
                 setDefaults();
-                onPropertyChanged("Enabled");
+                OnPropertyChanged();
             }
         }
 
@@ -55,16 +48,14 @@ namespace Procurement.ViewModel
                 Orb = "Chaos Orb";
         }
 
-        public ICommand IncreaseValue { get; set; }
-        public ICommand DecreaseValue { get; set; }
+        public ICommand IncreaseValue => new RelayCommand(x => updateValue(1));
+        public ICommand DecreaseValue => new RelayCommand(x => updateValue(-1));
+
         public PricingInfo()
         {
             value = string.Empty;
             orb = string.Empty;
             enabled = false;
-
-            IncreaseValue = new DelegateCommand(x => updateValue(1));
-            DecreaseValue = new DelegateCommand(x => updateValue(-1));
         }
 
         private void updateValue(int difference)
@@ -105,7 +96,7 @@ namespace Procurement.ViewModel
             if (!enabled || (string.IsNullOrEmpty(value) && string.IsNullOrEmpty(orb)))
                 return string.Empty;
 
-            return string.Format("{0} {1}", value, CurrencyAbbreviationMap.Instance.FromCurrency(orb));
+            return $"{value} {CurrencyAbbreviationMap.Instance.FromCurrency(orb)}";
         }
     }
 }

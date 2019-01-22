@@ -22,10 +22,12 @@ namespace POEApi.Model
         public static Dictionary<string, string> TabsBuyouts { get; private set; }
         public static Dictionary<string, ShopSetting> ShopSettings { get; private set; }
         public static List<string> PopularGems { get; private set; }
+        public static List<string> DropOnlyGems { get; private set; }
         private static XElement settingsFile;
         private static XElement buyoutFile;
 
         public static Dictionary<GearType, List<string>> GearBaseTypes { get; private set; }
+        public static List<FatedUniqueInfo> FatedUniques { get; private set; }
 
         static Settings()
         {
@@ -38,13 +40,21 @@ namespace POEApi.Model
             Lists = new Dictionary<string, List<string>>();
 
             if (settingsFile.Element("Lists") != null)
-                Lists = settingsFile.Element("Lists").Elements("List").ToDictionary(list => list.Attribute("name").Value, list => list.Elements("Item").Select(e => e.Attribute("value").Value).ToList());
+                Lists = settingsFile.Element("Lists").Elements("List")
+                    .ToDictionary(list => list.Attribute("name").Value, list => list.Elements("Item")
+                    .Select(e => e.Attribute("value").Value).ToList());
 
             loadBuyouts();
 
             PopularGems = new List<string>();
             if (settingsFile.Element("PopularGems") != null)
-                PopularGems = settingsFile.Element("PopularGems").Elements("Gem").Select(e => e.Attribute("name").Value).ToList();
+                PopularGems = settingsFile.Element("PopularGems").Elements("Gem")
+                    .Select(e => e.Attribute("name").Value).ToList();
+
+            DropOnlyGems = new List<string>();
+            if (settingsFile.Element("DropOnlyGems") != null)
+                DropOnlyGems = settingsFile.Element("DropOnlyGems").Elements("Gem")
+                    .Select(e => e.Attribute("name").Value).ToList();
 
             loadGearTypeData();
             loadShopSettings();
@@ -103,15 +113,33 @@ namespace POEApi.Model
         private static void loadGearTypeData()
         {
             XElement dataDoc = XElement.Load(DATA_LOCATION);
+
             GearBaseTypes = new Dictionary<GearType, List<string>>();
+            if (dataDoc.Element("GearBaseTypes") != null)
+            {
+                GearBaseTypes = dataDoc.Element("GearBaseTypes")
+                    .Elements("GearBaseType")
+                    .ToDictionary(g => (GearType)Enum.Parse(typeof(GearType), g.Attribute("name").Value),
+                                  g => g.Elements("Item")
+                    .Select(e => e.Attribute("name").Value)
+                    .Distinct()
+                    .ToList());
+            }
 
-            if (dataDoc.Element("GearBaseTypes") == null)
-                return;
-
-            GearBaseTypes = dataDoc.Element("GearBaseTypes").Elements("GearBaseType")
-                                                            .ToDictionary(g => (GearType)Enum.Parse(typeof(GearType), g.Attribute("name").Value), g => g.Elements("Item")
-                                                            .Select(e => e.Attribute("name").Value)
-                                                            .ToList());
+            FatedUniques = new List<FatedUniqueInfo>();
+            if (dataDoc.Element("FatedUniques") != null)
+            {
+                FatedUniques = dataDoc.Element("FatedUniques")
+                    .Elements("FatedUnique")
+                    .Select(e => new FatedUniqueInfo
+                    {
+                        TargetItemName = e.Attribute("targetName")?.Value,
+                        FatedItemName = e.Attribute("fatedName")?.Value,
+                        BaseTypeName = e.Attribute("baseType")?.Value,
+                        ProphecyName = e.Attribute("prophecyName")?.Value,
+                    })
+                    .ToList();
+            }
         }
 
         private static double getChaosAmount(XElement orb)
@@ -131,11 +159,23 @@ namespace POEApi.Model
 
         public static void Save()
         {
+            var userSettingsElements = settingsFile.Elements("UserSettings").Descendants();
             foreach (string key in UserSettings.Keys)
             {
-                XElement update = settingsFile.Elements("UserSettings").Descendants().First(x => x.Attribute("name").Value == key);
                 if (UserSettings[key] != null)
-                    update.Attribute("value").SetValue(UserSettings[key]);
+                {
+                    var elementToUpdate = userSettingsElements.FirstOrDefault(x => x.Attribute("name").Value == key);
+                    if (elementToUpdate != null)
+                    {
+                        elementToUpdate.Attribute("value").SetValue(UserSettings[key]);
+                    }
+                    else
+                    {
+                        var newSetting = new XElement("Setting", new XAttribute("name", key),
+                            new XAttribute("value", UserSettings[key]));
+                        settingsFile.Element("UserSettings").Add(newSetting);
+                    }
+                }
             }
 
             foreach (OrbType key in CurrencyRatios.Keys)
@@ -211,6 +251,7 @@ namespace POEApi.Model
         {
             try
             {
+                bool success = true;
                 if (!settingsFile.Elements("ShopSettings").Any())
                     settingsFile.Add(new XElement("ShopSettings"));
 
@@ -218,12 +259,23 @@ namespace POEApi.Model
 
                 foreach (var shop in ShopSettings)
                 {
-                    XElement buyout = new XElement("Shop", new XAttribute("League", shop.Key), new XAttribute("ThreadId", shop.Value.ThreadId), new XAttribute("ThreadTitle", shop.Value.ThreadTitle));
+                    if (shop.Value == null)
+                    {
+                        Logger.Log(string.Format("Shop settings for league {0} is null while trying to save settings.",
+                            shop.Key));
+                        success = false;
+                        continue;
+                    }
+
+                    XElement buyout = new XElement("Shop",
+                        new XAttribute("League", shop.Key),
+                        new XAttribute("ThreadId", shop.Value.ThreadId),
+                        new XAttribute("ThreadTitle", shop.Value.ThreadTitle));
                     settingsFile.Element("ShopSettings").Add(buyout);
                 }
 
                 settingsFile.Save(SAVE_LOCATION);
-                return true;
+                return success;
             }
             catch (Exception ex)
             {

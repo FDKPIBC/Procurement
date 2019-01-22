@@ -12,6 +12,7 @@ namespace POEApi.Infrastructure
     public static class DPAPI
     {
         private static RNGCryptoServiceProvider rngProvider = new RNGCryptoServiceProvider();
+        private static int saltLengthBytes = 16;
 
         public static string Encrypt(this SecureString secret)
         {
@@ -21,7 +22,7 @@ namespace POEApi.Infrastructure
             IntPtr ptr = Marshal.SecureStringToCoTaskMemUnicode(secret);
             try
             {
-                byte[] entropy = new byte[16];
+                byte[] entropy = new byte[saltLengthBytes];
                 rngProvider.GetBytes(entropy);
 
                 char[] buffer = new char[secret.Length];
@@ -47,16 +48,21 @@ namespace POEApi.Infrastructure
             if (cipher == null) throw new ArgumentNullException("cipher");
 
             byte[] saltInclusive = Convert.FromBase64String(cipher);
-            MemoryStream ms;
+            if (saltInclusive.Length < saltLengthBytes)
+            {
+                var securedString = new SecureString();
+                securedString.MakeReadOnly();
+                return securedString;
+            }
 
-            byte[] entropy;
-            byte[] data;
+            MemoryStream ms;
+            byte[] entropy, data;
 
             using (ms = new MemoryStream(saltInclusive))
             {
                 BinaryReader reader = new BinaryReader(ms, Encoding.Unicode);
-                entropy = reader.ReadBytes(16);
-                data = reader.ReadBytes(saltInclusive.Length - 16);
+                entropy = reader.ReadBytes(saltLengthBytes);
+                data = reader.ReadBytes(saltInclusive.Length - saltLengthBytes);
             }
 
             byte[] decrypted = ProtectedData.Unprotect(data, entropy, DataProtectionScope.CurrentUser);
@@ -64,10 +70,13 @@ namespace POEApi.Infrastructure
             SecureString secured = new SecureString();
 
             int count = Encoding.Unicode.GetCharCount(decrypted);
-            int bc = decrypted.Length / count;
+            if (count > 0)
+            {
+                int bc = decrypted.Length / count;
 
-            for (int i = 0; i < count; i++)
-                secured.AppendChar(Encoding.Unicode.GetChars(decrypted, i * bc, bc)[0]);
+                for (int i = 0; i < count; i++)
+                    secured.AppendChar(Encoding.Unicode.GetChars(decrypted, i * bc, bc)[0]);
+            }
 
             secured.MakeReadOnly();
 

@@ -10,10 +10,13 @@ namespace POEApi.Model
         DivinationCard,
         Essence,
         Quad,
+        Map,
+        Fragment,
 
-        Unknown,
+        Unknown
     }
 
+    [DebuggerDisplay("{DebuggerDisplay,nq}")]
     public class Tab
     {
         public bool IsFakeTab { get; set; }
@@ -49,12 +52,10 @@ namespace POEApi.Model
 
             return "http://webcdn.pathofexile.com" + url;
         }
-    }
 
-    public class Colour
-    {
-        public int r { get; set; }
-        public int g { get; set; }
-        public int b { get; set; }
+        private string DebuggerDisplay
+        {
+            get { return string.Format("{0} Tab - \"{1}\"", Type, Name); }
+        }
     }
 }

@@ -10,8 +10,9 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>Procurement</RootNamespace>
     <AssemblyName>Procurement</AssemblyName>
-    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
-    <TargetFrameworkProfile>Client</TargetFrameworkProfile>
+    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <TargetFrameworkProfile>
+    </TargetFrameworkProfile>
     <FileAlignment>512</FileAlignment>
     <ProjectTypeGuids>{60dc8134-eba5-43b8-bcc9-bb4bc16c2548};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
     <WarningLevel>4</WarningLevel>
@@ -65,8 +66,12 @@
     <Reference Include="System.Data" />
     <Reference Include="System.Drawing" />
     <Reference Include="System.Windows.Controls.Input.Toolkit, Version=3.5.40128.1, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\Lib\WPF Toolkit\v3.5.50211.1\System.Windows.Controls.Input.Toolkit.dll</HintPath>
+      <HintPath>..\packages\WPFToolkit.3.5.50211.1\lib\System.Windows.Controls.Input.Toolkit.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="System.Windows.Controls.Layout.Toolkit, Version=3.5.40128.1, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <HintPath>..\packages\WPFToolkit.3.5.50211.1\lib\System.Windows.Controls.Layout.Toolkit.dll</HintPath>
+      <Private>True</Private>
     </Reference>
     <Reference Include="System.Xml" />
     <Reference Include="Microsoft.CSharp" />
@@ -80,8 +85,8 @@
     <Reference Include="PresentationCore" />
     <Reference Include="PresentationFramework" />
     <Reference Include="WPFToolkit, Version=3.5.40128.1, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\Lib\WPF Toolkit\v3.5.50211.1\WPFToolkit.dll</HintPath>
+      <HintPath>..\packages\WPFToolkit.3.5.50211.1\lib\WPFToolkit.dll</HintPath>
+      <Private>True</Private>
     </Reference>
   </ItemGroup>
   <ItemGroup>
@@ -94,6 +99,21 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="ApplicationState.cs" />
+    <Compile Include="Controls\AbstractStashTabControl.cs" />
+    <Compile Include="Controls\EssenceStashTab.xaml.cs">
+      <DependentUpon>EssenceStashTab.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Controls\CurrencyStashTab.xaml.cs">
+      <DependentUpon>CurrencyStashTab.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Controls\FragmentStashTab.xaml.cs">
+      <DependentUpon>FragmentStashTab.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="ViewModel\TabViewModel\FragmentStashViewModel.cs" />
+    <Compile Include="RelayCommand.cs" />
+    <Compile Include="ViewModel\TabViewModel\EssenceStashViewModel.cs" />
+    <Compile Include="ViewModel\TabViewModel\CurrencyStashViewModel.cs" />
+    <Compile Include="Interfaces\IStashControl.cs" />
     <Compile Include="Controls\SetTabBuyoutView.xaml.cs">
       <DependentUpon>SetTabBuyoutView.xaml</DependentUpon>
     </Compile>
@@ -153,32 +173,62 @@
     <Compile Include="ViewModel\Filters\ForumExport\CraftedModFilter.cs" />
     <Compile Include="ViewModel\Filters\ForumExport\CurrencyFilter.cs" />
     <Compile Include="ViewModel\Filters\ForumExport\DamageChaos.cs" />
+    <Compile Include="ViewModel\Filters\ForumExport\DivineVesselFilter.cs" />
+    <Compile Include="ViewModel\Filters\ForumExport\ElderItemFilter.cs" />
     <Compile Include="ViewModel\Filters\ForumExport\EnchantModFilter.cs" />
     <Compile Include="ViewModel\Filters\ForumExport\EssenceFilter.cs" />
+    <Compile Include="ViewModel\Filters\ForumExport\FatedUniqueBaseTypesFilter.cs" />
+    <Compile Include="ViewModel\Filters\ForumExport\FatedUniquePropheciesFilter.cs" />
+    <Compile Include="ViewModel\Filters\ForumExport\FatedUniquesFilter.cs" />
+    <Compile Include="ViewModel\Filters\ForumExport\FatedUniqueTargetsFilter.cs" />
+    <Compile Include="ViewModel\Filters\ForumExport\FullBestiaryOrbFilter.cs" />
     <Compile Include="ViewModel\Filters\ForumExport\GearSearchFilters.cs" />
     <Compile Include="ViewModel\Filters\ForumExport\GemLevelFilter.cs" />
     <Compile Include="ViewModel\Filters\ForumExport\IncreasedDamageFilter.cs" />
+    <Compile Include="ViewModel\Filters\ForumExport\IncursionVialsFilter.cs" />
     <Compile Include="ViewModel\Filters\ForumExport\LeagestoneFilter.cs" />
     <Compile Include="ViewModel\Filters\ForumExport\LifeLeech.cs" />
     <Compile Include="ViewModel\Filters\ForumExport\ManaLeechFilter.cs" />
     <Compile Include="ViewModel\Filters\ForumExport\MapFilter.cs" />
+    <Compile Include="ViewModel\Filters\ForumExport\MirroredItemFilter.cs" />
     <Compile Include="ViewModel\Filters\ForumExport\MovementSpeed.cs" />
+    <Compile Include="ViewModel\Filters\ForumExport\MultipleVeiledModsFilter.cs" />
     <Compile Include="ViewModel\Filters\ForumExport\PercentEnergyShieldFilter.cs" />
     <Compile Include="ViewModel\Filters\ForumExport\PercentLifeFilter.cs" />
     <Compile Include="ViewModel\Filters\ForumExport\ProphecyFilter.cs" />
+    <Compile Include="ViewModel\Filters\ForumExport\ShaperItemFilter.cs" />
     <Compile Include="ViewModel\Filters\ForumExport\SixBlueSockets.cs" />
     <Compile Include="ViewModel\Filters\ForumExport\SixGreenSockets.cs" />
     <Compile Include="ViewModel\Filters\ForumExport\SixLink.cs" />
     <Compile Include="ViewModel\Filters\ForumExport\SixRedSockets.cs" />
     <Compile Include="ViewModel\Filters\ForumExport\SocketColourFilter.cs" />
+    <Compile Include="ViewModel\Filters\ForumExport\UnknownItemFilter.cs" />
+    <Compile Include="ViewModel\Filters\ForumExport\ScarabFilter.cs" />
+    <Compile Include="ViewModel\Filters\ForumExport\VeiledModFilter.cs" />
+    <Compile Include="ViewModel\Filters\ForumExport\VeiledPrefixFilter.cs" />
+    <Compile Include="ViewModel\Filters\ForumExport\VeiledSuffixFilter.cs" />
     <Compile Include="ViewModel\ForumExportVisitors\CurrencyVisitor.cs" />
+    <Compile Include="ViewModel\ForumExportVisitors\DivineVesselVisitor.cs" />
+    <Compile Include="ViewModel\ForumExportVisitors\ElderItemVisitor.cs" />
     <Compile Include="ViewModel\ForumExportVisitors\EssenceVisitor.cs" />
+    <Compile Include="ViewModel\ForumExportVisitors\FatedUniqueBaseTypeVisitor.cs" />
+    <Compile Include="ViewModel\ForumExportVisitors\FatedUniqueProphecyVisitor.cs" />
+    <Compile Include="ViewModel\ForumExportVisitors\FatedUniqueTargetVisitor.cs" />
+    <Compile Include="ViewModel\ForumExportVisitors\FatedUniqueVisitor.cs" />
+    <Compile Include="ViewModel\ForumExportVisitors\FullBestiaryOrbVisitor.cs" />
+    <Compile Include="ViewModel\ForumExportVisitors\IncursionVialVisitor.cs" />
+    <Compile Include="ViewModel\ForumExportVisitors\MirroredItemVisitor.cs" />
+    <Compile Include="ViewModel\ForumExportVisitors\OfferingVisitor.cs" />
     <Compile Include="ViewModel\ForumExportVisitors\ProphecyVisitor.cs" />
+    <Compile Include="ViewModel\ForumExportVisitors\ScarabVisitor.cs" />
+    <Compile Include="ViewModel\ForumExportVisitors\ShaperItemVisitor.cs" />
+    <Compile Include="ViewModel\ForumExportVisitors\UnknownItemVisitor.cs" />
+    <Compile Include="ViewModel\ObservableBase.cs" />
     <Compile Include="ViewModel\Recipes\MatchedSet.cs" />
     <Compile Include="ViewModel\SetTabBuyoutViewModel.cs" />
+    <Compile Include="ViewModel\TabViewModel\CommonTabViewModel.cs" />
     <Compile Include="ViewModel\TradeSettingsViewModel.cs" />
     <Compile Include="ViewModel\Cache\BitmapCache.cs" />
-    <Compile Include="ViewModel\DelegateCommand.cs" />
     <Compile Include="ViewModel\DisplayModeStrategy\DisplayModeFactory.cs" />
     <Compile Include="ViewModel\DisplayModeStrategy\DisplayModeStrategyBase.cs" />
     <Compile Include="ViewModel\DisplayModeStrategy\IDisplayModeStrategy.cs" />
@@ -311,8 +361,8 @@
     <Compile Include="ViewModel\ForumTemplateViewModel.cs" />
     <Compile Include="ViewModel\InventoryViewModel.cs" />
     <Compile Include="ViewModel\ItemHoverViewModel.cs" />
-    <Compile Include="Controls\StashControl.xaml.cs">
-      <DependentUpon>StashControl.xaml</DependentUpon>
+    <Compile Include="Controls\StashTabControl.xaml.cs">
+      <DependentUpon>StashTabControl.xaml</DependentUpon>
     </Compile>
     <Compile Include="ViewModel\ItemDisplayViewModel.cs" />
     <Compile Include="ViewModel\ItemHoverViewModelFactory.cs" />
@@ -334,7 +384,7 @@
     <Compile Include="ViewModel\Recipes\SameNameRecipe.cs" />
     <Compile Include="ViewModel\ScreenController.cs" />
     <Compile Include="ViewModel\SettingsViewModel.cs" />
-    <Compile Include="ViewModel\StashViewModel.cs" />
+    <Compile Include="ViewModel\TabViewModel\StashViewModel.cs" />
     <Compile Include="ViewModel\StatusController.cs" />
     <Compile Include="ViewModel\TradingViewModel.cs" />
     <Compile Include="View\AboutView.xaml.cs">
@@ -352,6 +402,8 @@
     <Compile Include="View\Converters\ItemPropertyToFormattedRunConverter.cs" />
     <Compile Include="View\Converters\ItemRequirementToFormattedRunConverter.cs" />
     <Compile Include="View\Converters\ItemToColorBrushConverter.cs" />
+    <Compile Include="View\Converters\ItemToItemHoverSymbolPath.cs" />
+    <Compile Include="View\Converters\ItemToItemHoverSymbolVisibility.cs" />
     <Compile Include="View\Converters\ObjectInListMultiConverter.cs" />
     <Compile Include="View\Converters\RecipeDescriptionConverter.cs" />
     <Compile Include="View\Converters\ResultMatchConverter.cs" />
@@ -403,6 +455,7 @@
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
     </EmbeddedResource>
     <None Include="app.config" />
+    <None Include="packages.config" />
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>
@@ -412,6 +465,18 @@
     <Resource Include="Resources\fontin-smallcaps-webfont.ttf" />
   </ItemGroup>
   <ItemGroup>
+    <Page Include="Controls\EssenceStashTab.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Controls\CurrencyStashTab.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Controls\FragmentStashTab.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="Controls\SetTabBuyoutView.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
@@ -480,7 +545,7 @@
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
-    <Page Include="Controls\StashControl.xaml">
+    <Page Include="Controls\StashTabControl.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
@@ -702,7 +767,35 @@
     <Resource Include="Images\ItemHover\ItemHeaderRelicMiddle.png" />
     <Resource Include="Images\ItemHover\ItemHeaderRelicRight.png" />
   </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Images\currencyTab.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Images\essenceTab.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Images\circleQuestion.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Images\Sockets\abyssal-socketed.png" />
+    <Resource Include="Images\Sockets\abyssal.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Images\stash-quad-grid.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Images\ItemHover\ElderIconAdorner.png" />
+    <Resource Include="Images\ItemHover\ShaperIconAdorner.png" />
+    <Resource Include="Images\ItemHover\VeiledIconAdorner.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Images\fragmentTab.png" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <PropertyGroup>
+    <PostBuildEvent>copy /Y "$(SolutionDir)LICENSE" "$(TargetDir)LICENSE"
+copy /Y "$(SolutionDir)README.md" "$(TargetDir)README.md"</PostBuildEvent>
+  </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it.
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">
